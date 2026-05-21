@@ -1,173 +1,25 @@
 import { useState, useEffect } from "react";
+import { T, COMPLAINT_COLORS, TABS } from "../constants/theme";
+import { fmtDate, fmtDateShort } from "../utils/formatters";
+import { apiFetch } from "../api/client";
+import { Avatar, Card, CardHeader, InfoRow, Spinner, ErrorMsg } from "../components/SharedUI";
 
-
-const API = "/api"; // cambia si tu base URL es diferente
-
-/* ─── Equoria Design Tokens ─── */
-const T = {
-  plum900: "#1a0a2e", plum800: "#2d1254", plum700: "#4a1e87", plum600: "#6b2fa0",
-  plum500: "#8b3fbf", plum400: "#a855d4", plum300: "#c084e8", plum200: "#ddb5f5", plum100: "#f3e8ff",
-  rose: "#e879a0", roseLight: "#fce4ef", gold: "#f0c060",
-  surface: "#faf7ff", textPrimary: "#1a0a2e", textSecondary: "#6b5380", white: "#ffffff",
-  green: "#10b981", red: "#ef4444",
-  shadow: "0 4px 24px rgba(107,47,160,0.12)", shadowLg: "0 12px 40px rgba(107,47,160,0.18)",
-};
-
-/* ─── Helpers ─── */
-const initials = (u) =>
-  u ? `${(u.name || "?")[0]}${(u.lastname || "?")[0]}`.toUpperCase() : "??";
-
-const fmtDate = (d) =>
-  d ? new Date(d).toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" }) : "—";
-
-const fmtDateShort = (d) =>
-  d ? new Date(d).toLocaleDateString("es-MX", { year: "numeric", month: "short", day: "numeric" }) : "—";
-
-const COMPLAINT_COLORS = {
-  pendiente: { bg: "rgba(240,192,96,0.12)", color: "#b45309", border: "rgba(240,192,96,0.4)", label: "Pendiente" },
-  revision:  { bg: "rgba(168,85,212,0.12)", color: T.plum600,  border: "rgba(168,85,212,0.3)", label: "En Revisión" },
-  resuelto:  { bg: "rgba(16,185,129,0.12)", color: T.green,    border: "rgba(16,185,129,0.3)", label: "Resuelto" },
-};
-
-/* ─── fetch helper ─── */
-async function apiFetch(path, token) {
-  const res = await fetch(`${API}${path}`, {
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-  });
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-  return res.json();
-}
-
-/* ─── Sub-components ─── */
-function Avatar({ user, size = 80 }) {
-  return (
-    <div style={{
-      width: size, height: size, borderRadius: "50%",
-      background: `linear-gradient(135deg, ${T.rose}, ${T.plum400})`,
-      display: "flex", alignItems: "center", justifyContent: "center",
-      fontSize: size * 0.3, fontWeight: 700,
-      color: T.white, fontFamily: "'Playfair Display', serif",
-      border: `3px solid ${T.white}`,
-      boxShadow: `0 4px 16px rgba(232,121,160,0.4)`,
-      flexShrink: 0,
-    }}>
-      {initials(user)}
-    </div>
-  );
-}
-
-function Card({ children, style = {} }) {
-  return (
-    <div style={{
-      background: T.white, borderRadius: 16,
-      boxShadow: T.shadow, padding: "24px", ...style,
-    }}>
-      {children}
-    </div>
-  );
-}
-
-function CardHeader({ title, subtitle, action }) {
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
-      <div>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 700, color: T.textPrimary }}>{title}</div>
-        {subtitle && <div style={{ fontSize: 12, color: T.textSecondary, marginTop: 2 }}>{subtitle}</div>}
-      </div>
-      {action && (
-        <button onClick={action.onClick} style={{
-          background: "none", border: "none", cursor: "pointer",
-          color: T.plum400, fontSize: 13, fontWeight: 600,
-          fontFamily: "'DM Sans', sans-serif",
-        }}>
-          {action.label} →
-        </button>
-      )}
-    </div>
-  );
-}
-
-function InfoRow({ icon, label, value }) {
-  return (
-    <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 0", borderBottom: `1px solid ${T.plum100}` }}>
-      <div style={{
-        width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-        background: T.plum100, display: "flex", alignItems: "center", justifyContent: "center",
-        color: T.plum600, fontSize: 14,
-      }}>
-        <i className={`fa-solid ${icon}`}></i>
-      </div>
-      <div style={{ paddingTop: 2 }}>
-        <div style={{ fontSize: 11, color: T.textSecondary, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 2 }}>{label}</div>
-        <div style={{ fontSize: 14, color: T.textPrimary, fontWeight: 500 }}>{value || "—"}</div>
-      </div>
-    </div>
-  );
-}
-
-function Spinner() {
-  return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "60px 0" }}>
-      <div style={{
-        width: 40, height: 40, borderRadius: "50%",
-        border: `3px solid ${T.plum100}`,
-        borderTopColor: T.plum500,
-        animation: "spin 0.8s linear infinite",
-      }} />
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </div>
-  );
-}
-
-function ErrorMsg({ msg, onRetry }) {
-  return (
-    <div style={{
-      background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)",
-      borderRadius: 12, padding: "20px 24px", textAlign: "center",
-    }}>
-      <i className="fa-solid fa-triangle-exclamation" style={{ color: T.red, fontSize: 24, marginBottom: 8, display: "block" }}></i>
-      <div style={{ color: T.red, fontSize: 14, fontWeight: 600 }}>{msg}</div>
-      {onRetry && (
-        <button onClick={onRetry} style={{
-          marginTop: 12, background: T.white, border: `1px solid ${T.plum200}`,
-          color: T.plum600, borderRadius: 8, padding: "8px 18px",
-          cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600,
-        }}>
-          Reintentar
-        </button>
-      )}
-    </div>
-  );
-}
-
-/* ─── Tabs ─── */
-const TABS = [
-  { label: "Perfil",   icon: "fa-id-card" },
-  { label: "Denuncias", icon: "fa-file-lines" },
-  { label: "Testimonios", icon: "fa-comment" },
-  { label: "Contactos de Emergencia", icon: "fa-phone" },
-];
-
-/* ════════════════════════════════════════
-   MAIN COMPONENT
-   ════════════════════════════════════════ */
 export default function UserProfile({ userId, token, onBack }) {
   const [activeTab, setActiveTab] = useState(0);
 
   /* data state */
-  const [user,       setUser]       = useState(null);
-  const [complaints, setComplaints] = useState([]);
-  const [testimonies,setTestimonies]= useState([]);
-  const [contacts,   setContacts]   = useState([]);
+  const [user,        setUser]        = useState(null);
+  const [complaints,  setComplaints]  = useState([]);
+  const [testimonies, setTestimonies] = useState([]);
+  const [contacts,    setContacts]    = useState([]);
 
   /* loading / error per resource */
-  const [loading, setLoading]   = useState({ user: true, complaints: true, testimonies: true, contacts: true });
-  const [errors,  setErrors]    = useState({});
+  const [loading, setLoading] = useState({ user: true, complaints: true, testimonies: true, contacts: true });
+  const [errors,  setErrors]  = useState({});
 
   const setDone  = (key) => setLoading(p => ({ ...p, [key]: false }));
   const setError = (key, msg) => { setErrors(p => ({ ...p, [key]: msg })); setDone(key); };
 
-  /* ── Fetch user ── */
   useEffect(() => {
     if (!userId || !token) return;
     apiFetch(`/users/${userId}`, token)
@@ -175,7 +27,6 @@ export default function UserProfile({ userId, token, onBack }) {
       .catch(e => setError("user", `No se pudo cargar el perfil: ${e.message}`));
   }, [userId, token]);
 
-  /* ── Fetch complaints ── */
   useEffect(() => {
     if (!userId || !token) return;
     apiFetch("/complaint", token)
@@ -187,7 +38,6 @@ export default function UserProfile({ userId, token, onBack }) {
       .catch(e => setError("complaints", `No se pudieron cargar las denuncias: ${e.message}`));
   }, [userId, token]);
 
-  /* ── Fetch testimonies ── */
   useEffect(() => {
     if (!userId || !token) return;
     apiFetch("/testimonials", token)
@@ -199,7 +49,6 @@ export default function UserProfile({ userId, token, onBack }) {
       .catch(e => setError("testimonies", `No se pudieron cargar los testimonios: ${e.message}`));
   }, [userId, token]);
 
-  /* ── Fetch emergency contacts ── */
   useEffect(() => {
     if (!userId || !token) return;
     apiFetch("/emergencyContact", token)
@@ -211,7 +60,6 @@ export default function UserProfile({ userId, token, onBack }) {
       .catch(e => setError("contacts", `No se pudieron cargar los contactos: ${e.message}`));
   }, [userId, token]);
 
-  /* ── Guards ── */
   if (!userId || !token) {
     return (
       <div style={{ fontFamily: "'DM Sans', sans-serif" }}>
@@ -223,17 +71,13 @@ export default function UserProfile({ userId, token, onBack }) {
   if (loading.user) return <Spinner />;
   if (errors.user)  return <ErrorMsg msg={errors.user} />;
 
-  /* ── Derived stats ── */
   const resolvedCount = complaints.filter(c => c.status === "resuelto").length;
   const verifiedBadge = user.verificated
     ? { label: "Verificada", bg: "rgba(16,185,129,0.12)", color: T.green,   border: "rgba(16,185,129,0.3)" }
     : { label: "Pendiente",  bg: "rgba(232,121,160,0.12)", color: T.rose,  border: "rgba(232,121,160,0.3)" };
 
-  /* ════ RENDER ════ */
   return (
     <div style={{ fontFamily: "'DM Sans', sans-serif", color: T.textPrimary }}>
-
-      {/* Page header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
         <div>
           <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: T.textPrimary, display: "flex", alignItems: "center", gap: 10, margin: 0 }}>
@@ -257,9 +101,7 @@ export default function UserProfile({ userId, token, onBack }) {
         )}
       </div>
 
-      {/* ── Cover card ── */}
       <Card style={{ padding: 0, marginBottom: 24, overflow: "visible" }}>
-        {/* Cover */}
         <div style={{
           height: 160, borderRadius: "16px 16px 0 0", position: "relative", overflow: "hidden",
           background: "linear-gradient(135deg, #4a1e87 0%, #8b3fbf 50%, #e879a0 100%)",
@@ -270,7 +112,6 @@ export default function UserProfile({ userId, token, onBack }) {
           }} />
         </div>
 
-        {/* Avatar + name */}
         <div style={{ position: "relative", padding: "0 28px 20px" }}>
           <div style={{ position: "absolute", top: -44, left: 28 }}>
             <Avatar user={user} size={88} />
@@ -304,7 +145,6 @@ export default function UserProfile({ userId, token, onBack }) {
           </div>
         </div>
 
-        {/* Stats strip */}
         <div style={{ borderTop: `1px solid ${T.plum100}`, display: "flex" }}>
           {[
             { label: "Denuncias",       value: loading.complaints  ? "…" : complaints.length,   icon: "fa-file-lines",  color: T.rose },
@@ -326,7 +166,6 @@ export default function UserProfile({ userId, token, onBack }) {
           ))}
         </div>
 
-        {/* Tabs */}
         <div style={{ borderTop: `1px solid ${T.plum100}`, display: "flex", padding: "0 28px", overflowX: "auto" }}>
           {TABS.map((tab, i) => (
             <button key={i} onClick={() => setActiveTab(i)} style={{
@@ -345,7 +184,6 @@ export default function UserProfile({ userId, token, onBack }) {
         </div>
       </Card>
 
-      {/* ══ TAB 0 — Perfil ══ */}
       {activeTab === 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
           <Card>
@@ -386,7 +224,6 @@ export default function UserProfile({ userId, token, onBack }) {
         </div>
       )}
 
-      {/* ══ TAB 1 — Denuncias ══ */}
       {activeTab === 1 && (
         <Card>
           <CardHeader
@@ -431,7 +268,6 @@ export default function UserProfile({ userId, token, onBack }) {
         </Card>
       )}
 
-      {/* ══ TAB 2 — Testimonios ══ */}
       {activeTab === 2 && (
         <Card>
           <CardHeader
@@ -472,7 +308,6 @@ export default function UserProfile({ userId, token, onBack }) {
         </Card>
       )}
 
-      {/* ══ TAB 3 — Contactos de Emergencia ══ */}
       {activeTab === 3 && (
         <Card>
           <CardHeader
