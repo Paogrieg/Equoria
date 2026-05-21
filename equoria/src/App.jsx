@@ -1,22 +1,17 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import "./App.css";
+import Landing from "./views/Landing";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      {showCrisisBar && <CrisisBar />}
-      {page === "landing"   && <LandingPage   onNavigate={setPage} />}
-      {page === "login"     && <AuthPage       mode="login"    onNavigate={setPage} />}
-      {page === "register"  && <AuthPage       mode="register" onNavigate={setPage} />}
-      {page === "dashboard" && <DashboardPage  onNavigate={setPage} />}
-      {page === "profile"   && <ProfilePage    onNavigate={setPage} />}
-    </>
-  )
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;
+
